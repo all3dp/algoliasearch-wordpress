@@ -1,6 +1,9 @@
 jQuery(document).ready(function ($) {
 
-    if (algoliaSettings.type_of_search == "autocomplete")
+    var autocomplete = true;
+    var instant = true;
+
+    if (algoliaSettings.type_of_search.indexOf("autocomplete") !== -1)
     {
         var $autocompleteTemplate = Hogan.compile($('#autocomplete-template').text());
 
@@ -37,17 +40,32 @@ jQuery(document).ready(function ($) {
             }
         });
 
-        $(algoliaSettings.search_input_selector).each(function (i) {
+        function activateAutocomplete()
+        {
+            $(algoliaSettings.search_input_selector).each(function (i) {
 
-            $(this).typeahead({hint: false}, hogan_objs);
+                $(this).typeahead({hint: false}, hogan_objs);
 
-            $(this).on('typeahead:selected', function (e, item) {
-                window.location.href = item.permalink;
+                $(this).on('typeahead:selected', function (e, item) {
+                    autocomplete = false;
+                    instant = false;
+                    window.location.href = item.permalink;
+                });
             });
-        });
+
+        }
+
+        activateAutocomplete();
+
+        function desactivateAutocomplete()
+        {
+            $(algoliaSettings.search_input_selector).each(function (i) {
+                $(this).typeahead('destroy')
+            });
+        }
     }
 
-    if (algoliaSettings.type_of_search == "instant")
+    if (algoliaSettings.type_of_search.indexOf("instant") !== -1)
     {
         window.facetsLabels = {
             'post': 'Article',
@@ -94,7 +112,19 @@ jQuery(document).ready(function ($) {
             hitsPerPage: algoliaSettings.number_by_page
         });
 
-        helper.on('result', searchCallback);
+        function activateInstant()
+        {
+            helper.on('result', searchCallback);
+        }
+
+        activateInstant();
+
+        function desactivateInstant()
+        {
+            helper.removeAllListeners();
+            location.replace('#');
+            $(algoliaSettings.instant_jquery_selector).html(old_content);
+        }
 
         engine.setHelper(helper);
 
@@ -234,6 +264,9 @@ jQuery(document).ready(function ($) {
         $(algoliaSettings.search_input_selector).keyup(function (e) {
             e.preventDefault();
 
+            if (instant === false)
+                return;
+
             var $this = $(this);
 
             engine.helper.setQuery($(this).val());
@@ -303,10 +336,25 @@ jQuery(document).ready(function ($) {
 
         $(algoliaSettings.search_input_selector).attr('autocomplete', 'off').attr('autocorrect', 'off').attr('spellcheck', 'false').attr('autocapitalize', 'off');
 
-        engine.getRefinementsFromUrl(searchCallback);
+        engine.getRefinementsFromUrl();
 
         window.addEventListener("popstate", function(e) {
-            engine.getRefinementsFromUrl(searchCallback);
+            engine.getRefinementsFromUrl();
         });
+
+        if (algoliaSettings.type_of_search.indexOf("autocomplete") !== -1 && algoliaSettings.type_of_search.indexOf("instant") !== -1)
+        {
+            if (location.hash.length <= 1)
+            {
+                desactivateInstant();
+                instant = false;
+            }
+            else
+            {
+                autocomplete = false;
+                desactivateAutocomplete();
+                $(algoliaSettings.search_input_selector+':first').focus();
+            }
+        }
     }
 });

@@ -6,6 +6,7 @@ class AlgoliaPlugin
     private $algolia_helper;
     private $indexer;
     private $theme_helper;
+    private $query_replacer;
 
     public function __construct()
     {
@@ -18,6 +19,8 @@ class AlgoliaPlugin
                 $this->algolia_registry->search_key,
                 $this->algolia_registry->admin_key
             );
+
+            $this->query_replacer = new \Algolia\Core\QueryReplacer($this->algolia_helper);
         }
 
         $this->theme_helper = new \Algolia\Core\ThemeHelper();
@@ -36,15 +39,15 @@ class AlgoliaPlugin
         add_action('admin_post_update_sortable_attributes',     array($this, 'admin_post_update_sortable_attributes'));
         add_action('admin_post_reset_config_to_default',        array($this, 'admin_post_reset_config_to_default'));
 
+        add_action('pre_get_posts',                             array($this, 'pre_get_posts'));
+        add_filter('the_posts',                                 array($this, 'get_search_result_posts'));
+
         add_action('admin_post_reindex',                        array($this, 'admin_post_reindex'));
 
         add_action('admin_enqueue_scripts',                     array($this, 'admin_scripts'));
         add_action('wp_enqueue_scripts',                        array($this, 'scripts'));
 
         add_action('wp_footer',                                 array($this, 'wp_footer'));
-
-//        echo '<pre>';
-
     }
 
     public function add_admin_menu()
@@ -175,6 +178,18 @@ class AlgoliaPlugin
         wp_enqueue_style('jquery-ui', plugin_dir_url(__FILE__) . 'lib/jquery/jquery-ui.min.css');
     }
 
+    public function pre_get_posts($query)
+    {
+        return $this->query_replacer->search($query);
+    }
+
+    public function get_search_result_posts($posts)
+    {
+        $posts = $this->query_replacer->getOrderedPost($posts);
+
+        return $posts;
+    }
+
     public function admin_post_update_account_info()
     {
         $app_id     = !empty($_POST['APP_ID'])      ? sanitize_text_field($_POST['APP_ID']) : '';
@@ -286,7 +301,7 @@ class AlgoliaPlugin
 
     public function admin_post_update_type_of_search()
     {
-        if (isset($_POST['TYPE_OF_SEARCH']) && in_array($_POST['TYPE_OF_SEARCH'], array('instant', 'autocomplete')))
+        if (isset($_POST['TYPE_OF_SEARCH']) && is_array($_POST['TYPE_OF_SEARCH']))
             $this->algolia_registry->type_of_search = $_POST['TYPE_OF_SEARCH'];
 
         if (isset($_POST['JQUERY_SELECTOR']))
@@ -426,10 +441,10 @@ class AlgoliaPlugin
                     $metas['tax'][$tax['SLUG']]['name']                 = isset($tax['NAME']) ? $tax['NAME'] : '';
                     $metas['tax'][$tax['SLUG']]['indexable']            = 1;
 
-                    $metas['tax'][$tax['SLUG']]['facetable']            = $this->algolia_registry->type_of_search == 'instant'
+                    $metas['tax'][$tax['SLUG']]['facetable']            = in_array('instant', $this->algolia_registry->type_of_search)
                                                                             && $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['FACETABLE']) ? 1 : 0;
 
-                    $metas['tax'][$tax['SLUG']]['autocompletable']      = $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['FACETABLE']) ? 1 : 0;
+                    $metas['tax'][$tax['SLUG']]['autocompletable']      = $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['AUTOCOMPLETABLE']) ? 1 : 0;
                     $metas['tax'][$tax['SLUG']]['type']                 = $tax['FACET_TYPE'];
                     $metas['tax'][$tax['SLUG']]['order']                = $tax['ORDER'];
                     $metas['tax'][$tax['SLUG']]['custom_ranking']       = isset($tax['CUSTOM_RANKING']) && $tax['CUSTOM_RANKING'] ? $tax['CUSTOM_RANKING'] : 0;

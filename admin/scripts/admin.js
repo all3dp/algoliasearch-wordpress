@@ -4,7 +4,7 @@ jQuery(document).ready(function($) {
     /**
      * Handle display/hide of subcontent
      */
-    $(".has-extra-content input[type='radio']").each(function () {
+    $(".has-extra-content input[type='checkbox']").each(function () {
             if ($(this).is(':checked'))
                 $(this).closest(".has-extra-content").find(".show-hide").show();
     });
@@ -25,8 +25,8 @@ jQuery(document).ready(function($) {
 
     handleScreenshot();
 
-    $(".has-extra-content input[type='radio']").change(function (e) {
-        $(".has-extra-content input[type='radio']").each(function () {
+    $(".has-extra-content input[type='checkbox']").change(function (e) {
+        $(".has-extra-content input[type='checkbox']").each(function () {
             if ($(this).is(':checked'))
                 $(this).closest(".has-extra-content").find(".show-hide").show();
             else
@@ -81,8 +81,6 @@ jQuery(document).ready(function($) {
         $(hash).show();
         $("#_extra-metas .title").removeClass("selected");
         $("[data-tab='"+ hash +"']").addClass("selected");
-
-        $(window).scrollTop(0);
     };
 
     $("#_extra-metas .title").click(function () {
@@ -146,6 +144,9 @@ jQuery(document).ready(function($) {
                 $(this).find("td").find("input,select").slice(1).prop('disabled', true);
             }
         });
+
+        if (div == '#_extra-metas')
+            disableFacetsInput('#extra-meta-and-taxonomies');
     }
 
     var disabelable = ['#_indexable-types', '#_extra-metas', '#_indexable-types', '#_searchable_attributes', '#_custom-ranking', '#_sortable_attributes'];
@@ -168,10 +169,11 @@ jQuery(document).ready(function($) {
         $(div + " tr:not(:first)").each(function (i) {
             var tds = $(this).find("td");
 
-            if ($(tds[3]).find('input[type="checkbox"]').prop('checked') == false)
-            {
-                $(this).find("td").find("input,select").slice(2).prop('disabled', true);
-            }
+            if (($(tds[3]).find('input[type="checkbox"]').prop('checked') == undefined || $(tds[3]).find('input[type="checkbox"]').prop('checked') == false) && $(tds[4]).find('input[type="checkbox"]').prop('checked') == false)
+                $(tds[6]).find("input,select").prop('disabled', true);
+
+            if ($(tds[4]).find('input[type="checkbox"]').prop('checked') == false)
+                $(tds[5]).find("input,select").prop('disabled', true);
         });
     }
 
