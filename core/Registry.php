@@ -51,7 +51,7 @@ class Registry
                 return $this->attributes[$name];
         }
 
-        throw new \Exception("Unknown attribute: ".$name);
+        #throw new \Exception("Unknown attribute: ".$name);
     }
 
     public function __set($name, $value)
