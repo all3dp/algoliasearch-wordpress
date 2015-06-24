@@ -105,24 +105,6 @@ jQuery(document).ready(function ($) {
             hitsPerPage: algoliaSettings.number_by_page
         });
 
-        function activateInstant()
-        {
-            helper.on('result', searchCallback);
-        }
-
-        activateInstant();
-
-        function desactivateInstant()
-        {
-            helper.removeAllListeners();
-
-            location.replace('#');
-
-            $(algoliaSettings.instant_jquery_selector).html(old_content);
-        }
-
-        engine.setHelper(helper);
-
         /**
          * Functions
          */
@@ -162,6 +144,25 @@ jQuery(document).ready(function ($) {
 
             updateSliderValues();
         }
+
+        function activateInstant()
+        {
+            helper.on('result', searchCallback);
+        }
+
+        activateInstant();
+
+        function desactivateInstant()
+        {
+            helper.removeAllListeners();
+
+            location.replace('#');
+
+            $(algoliaSettings.instant_jquery_selector).html(old_content);
+        }
+
+        engine.setHelper(helper);
+
 
         /**
          * Custom Facets Types
@@ -207,6 +208,9 @@ jQuery(document).ready(function ($) {
             var all_unchecked = true;
 
             var content_facet = content.getFacetByName(facet.tax);
+
+            if (content_facet == undefined)
+                return data;
 
             for (var key in content_facet.data)
             {

@@ -1,5 +1,7 @@
 <?php namespace Algolia\Core;
 
+use AlgoliaSearch\AlgoliaException;
+
 class AlgoliaHelper
 {
     private $algolia_client;
@@ -103,10 +105,6 @@ class AlgoliaHelper
             else
                 $attributesToIndex[] = $key;
 
-        foreach ($attributesToSnippet as &$attribute)
-            if ($attribute == 'content' || $attribute == 'content_stripped')
-                $attribute = $attribute.':'.$this->algolia_registry->number_of_word_for_content;
-
         $defaultSettings = array(
             "attributesToIndex"     => $attributesToIndex,
             "attributesToSnippet"   => $attributesToSnippet
@@ -191,7 +189,7 @@ class AlgoliaHelper
 
         $mergeSettings = $this->mergeSettings($index_name.'all', $settings);
 
-        if (in_array('autocomplete', $this->algolia_registry->type_of_search))
+        if (in_array('instant', $this->algolia_registry->type_of_search) == false)
             return;
 
         $this->setSettings($index_name.'all', $mergeSettings);
@@ -228,14 +226,45 @@ class AlgoliaHelper
     {
         $index = $this->algolia_client->initIndex($index_name);
 
-        $index->saveObjects($objects);
+        try
+        {
+            $index->saveObjects($objects);
+        }
+        catch(AlgoliaException $e)
+        {
+            if (strstr($e->getMessage(), 'Record is too big') == false)
+                throw $e;
+
+            echo "<div>One of your record is too big. You need to reconfigure truncation in the Algolia plugin admin panel or contact support to increase record size limit</div>";
+        }
     }
 
     public function pushObject($index_name, $object)
     {
+        if (isset($_GET['reload']))
+            return;
+
         $index = $this->algolia_client->initIndex($index_name);
 
-        $index->saveObject($object);
+        try
+        {
+            $index->saveObject($object);
+        }
+        catch(AlgoliaException $e)
+        {
+            if (strstr($e->getMessage(), 'Record is too big') == false)
+                throw $e;
+
+            echo "<div>Your record is too big. You need to reconfigure truncation in the Algolia plugin admin panel or contact support to increase record size limit</div>";
+            echo "<div>You will be redirected in 5 seconds</div>";
+            echo "<script>
+                setTimeout(function () {
+                    window.location = window.location + '?reload=true';
+                }, 5000);
+            </script>";
+
+            die();
+        }
     }
 
     public function deleteObject($index_name, $object)

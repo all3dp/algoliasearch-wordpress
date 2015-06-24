@@ -12,19 +12,33 @@ class Registry
         'search_key'                    => '',
         'admin_key'                     => '',
         'index_name'                    => '',
-        'indexable_types'               => array('post' => array('name' => 'Articles','order' => 0),'page' => array('name' => 'Pages','order' => 1)),
-        'searchable'                    => array('title' => array('ordered' => 'ordered', 'order' => 0), 'content_stripped' => array('ordered' => 'unordered', 'order' => 1)),
+        'indexable_types'               => array(
+                                                'post' => array('name' => 'Articles', 'order' => 0),
+                                                'page' => array('name' => 'Pages', 'order' => 1)
+                                            ),
+        'searchable'                    => array(
+                                                'title'     => array('ordered' => 'ordered', 'order' => 0),
+                                                'h1'        => array('ordered' => 'ordered', 'order' => 1),
+                                                'h2'        => array('ordered' => 'ordered', 'order' => 2),
+                                                'h3'        => array('ordered' => 'ordered', 'order' => 3),
+                                                'h4'        => array('ordered' => 'ordered', 'order' => 4),
+                                                'h5'        => array('ordered' => 'ordered', 'order' => 5),
+                                                'h6'        => array('ordered' => 'ordered', 'order' => 6),
+                                                'text'      => array('ordered' => 'unordered', 'order' => 7),
+                                                'content'   => array('ordered' => 'unordered', 'order' => 8)
+                                            ),
         'sortable'                      => array(),
         'type_of_search'                => array('autocomplete', 'instant'),
         'instant_jquery_selector'       => '#content',
-        'extras'                        => array('author' => 'author', 'author_login' => 'author_login', 'permalink' => 'permalink', 'date' => 'date', 'content' => 'content', 'content_stripped' => 'content_stripped', 'title' => 'title', 'slug' => 'slug', 'modified' => 'modified', 'parent' => 'parent', 'menu_order' => 'menu_order', 'type' => 'type'),
+        'extras'                        => array('author' => 'author', 'author_login' => 'author_login', 'permalink' => 'permalink', 'date' => 'date', 'content' => 'content', 'h1' => 'h1', 'h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4', 'h5' => 'h5', 'h6' => 'h6', 'text' => 'text', 'title' => 'title', 'slug' => 'slug', 'modified' => 'modified', 'parent' => 'parent', 'menu_order' => 'menu_order', 'type' => 'type'),
         'metas'                         => array(),
         'number_by_page'                => 10,
         'number_by_type'                => 3,
-        'number_of_word_for_content'    => 30,
         'search_input_selector'         => "[name='s']",
         'theme'                         => 'default',
-        'last_update'                   => ''
+        'last_update'                   => '',
+        'enable_truncating'             => true,
+        'truncate_size'                 => 9000
     );
 
     public static function getInstance()
@@ -73,6 +87,21 @@ class Registry
             update_option(static::$setting_key, $this->options);
         else
             add_option(static::$setting_key, $this->options);
+    }
+
+    public function export()
+    {
+        return json_encode($this->options);
+    }
+
+    public function import($attributes)
+    {
+        if (is_array($attributes))
+            foreach ($attributes as $key => $value)
+                if (isset($this->attributes[$key]))
+                    $this->options[$key] = $value;
+
+        $this->save();
     }
 
     public function reset_config_to_default()

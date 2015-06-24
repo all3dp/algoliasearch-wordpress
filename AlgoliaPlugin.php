@@ -19,9 +19,9 @@ class AlgoliaPlugin
                 $this->algolia_registry->search_key,
                 $this->algolia_registry->admin_key
             );
-
-            $this->query_replacer = new \Algolia\Core\QueryReplacer($this->algolia_helper);
         }
+
+        $this->query_replacer = new \Algolia\Core\QueryReplacer();
 
         $this->theme_helper = new \Algolia\Core\ThemeHelper();
 
@@ -38,6 +38,8 @@ class AlgoliaPlugin
         add_action('admin_post_update_searchable_attributes',   array($this, 'admin_post_update_searchable_attributes'));
         add_action('admin_post_update_sortable_attributes',     array($this, 'admin_post_update_sortable_attributes'));
         add_action('admin_post_reset_config_to_default',        array($this, 'admin_post_reset_config_to_default'));
+        add_action('admin_post_export_config',                  array($this, 'admin_post_export_config'));
+        add_action('admin_post_update_advanced_settings',       array($this, 'admin_post_update_advanced_settings'));
 
         add_action('pre_get_posts',                             array($this, 'pre_get_posts'));
         add_filter('the_posts',                                 array($this, 'get_search_result_posts'));
@@ -149,6 +151,8 @@ class AlgoliaPlugin
 
     public function admin_scripts($hook)
     {
+        wp_enqueue_style('styles-admin', plugin_dir_url(__FILE__) . 'admin/styles/styles.css');
+
         // Only load these scripts on the Algolia admin page
         if ( 'toplevel_page_algolia-settings' != $hook ) {
             return;
@@ -174,7 +178,6 @@ class AlgoliaPlugin
         wp_localize_script('admin.js', 'algoliaAdminSettings', $algoliaAdminSettings);
         wp_enqueue_script('admin.js');
 
-        wp_enqueue_style('styles-admin', plugin_dir_url(__FILE__) . 'admin/styles/styles.css');
         wp_enqueue_style('jquery-ui', plugin_dir_url(__FILE__) . 'lib/jquery/jquery-ui.min.css');
     }
 
@@ -192,6 +195,27 @@ class AlgoliaPlugin
 
     public function admin_post_update_account_info()
     {
+
+        if (isset($_POST['submit']) && $_POST['submit'] == 'Import'
+            && isset($_FILES['import']) && isset($_FILES['import']['tmp_name']) && is_file($_FILES['import']['tmp_name']))
+        {
+            $content = file_get_contents($_FILES['import']['tmp_name']);
+
+            try
+            {
+                $this->algolia_registry->import(json_decode($content, true));
+                wp_redirect('admin.php?page=algolia-settings#credentials');
+                return;
+            }
+            catch(\Exception $e)
+            {
+                echo $e->getMessage();
+                echo '<pre>';
+                echo $e->getTraceAsString();
+                die();
+            }
+        }
+
         $app_id     = !empty($_POST['APP_ID'])      ? sanitize_text_field($_POST['APP_ID']) : '';
         $search_key = !empty($_POST['SEARCH_KEY'])  ? sanitize_text_field($_POST['SEARCH_KEY']) : '';
         $admin_key  = !empty($_POST['ADMIN_KEY'])   ? sanitize_text_field($_POST['ADMIN_KEY']) : '';
@@ -299,6 +323,17 @@ class AlgoliaPlugin
         wp_redirect('admin.php?page=algolia-settings#sortable_attributes');
     }
 
+    public function admin_post_update_advanced_settings()
+    {
+        $this->algolia_registry->enable_truncating = isset($_POST['ENABLE_TRUNCATING']);
+
+        if (isset($_POST['TRUNCATE_SIZE']) && is_numeric($_POST['TRUNCATE_SIZE']))
+            $this->algolia_registry->truncate_size = $_POST['TRUNCATE_SIZE'];
+
+        wp_redirect('admin.php?page=algolia-settings#advanced');
+    }
+
+
     public function admin_post_update_type_of_search()
     {
         if (isset($_POST['TYPE_OF_SEARCH']) && is_array($_POST['TYPE_OF_SEARCH']))
@@ -309,9 +344,6 @@ class AlgoliaPlugin
 
         if (isset($_POST['NUMBER_BY_PAGE']) && is_numeric($_POST['NUMBER_BY_PAGE']))
             $this->algolia_registry->number_by_page = $_POST['NUMBER_BY_PAGE'];
-
-        if (isset($_POST['NUMBER_OF_WORD_FOR_CONTENT']) && is_numeric($_POST['NUMBER_OF_WORD_FOR_CONTENT']))
-            $this->algolia_registry->number_of_word_for_content = $_POST['NUMBER_OF_WORD_FOR_CONTENT'];
 
         if (isset($_POST['NUMBER_BY_TYPE']) && is_numeric($_POST['NUMBER_BY_TYPE']))
             $this->algolia_registry->number_by_type = $_POST['NUMBER_BY_TYPE'];
@@ -384,6 +416,14 @@ class AlgoliaPlugin
     public function admin_post_reset_config_to_default()
     {
         $this->algolia_registry->reset_config_to_default();
+    }
+
+    public function admin_post_export_config()
+    {
+        header("Content-type: text/plain");
+        header("Content-Disposition: attachment; filename=algolia-wordpress-config.txt");
+
+        echo $this->algolia_registry->export();
     }
 
     public function admin_post_update_extra_meta()
