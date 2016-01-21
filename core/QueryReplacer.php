@@ -17,6 +17,7 @@ class QueryReplacer
 
     public function search($query)
     {
+
         if (function_exists('is_main_query') && ! $query->is_main_query())
             return $query;
 

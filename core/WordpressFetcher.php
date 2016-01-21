@@ -213,8 +213,8 @@ class WordpressFetcher
 
         $this->getContent($data, $obj);
 
-        //unset($obj->excerpt);
-        $obj->excerpt           = my_excerpt($data->post_content, get_the_excerpt());
+        unset($obj->excerpt);
+        //$obj->excerpt           = my_excerpt($data->post_content, get_the_excerpt());
 
         $thumbnail_id = get_post_thumbnail_id($data->ID);
 
