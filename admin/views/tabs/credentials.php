@@ -6,7 +6,7 @@
                 <div style="float: left;">
                     <div style="padding: 0px 10px;">
                         <h3>Algolia account</h3>
-                        <p class="help-block">Configure here your <a href="https://www.algolia.com">Algolia</a> credentials. You can find them in the "<a href="https://www.algolia.com/licensing">Credentials</a>" section of your dashboard. Don't have one? <a href="http://www.algolia.com/users/sign_up" target="_blank">Create one here</a>.</p>
+                        <p class="help-block">Configure here your <a href="https://www.algolia.com">Algolia</a> credentials. You can find them in the "<a href="https://www.algolia.com/licensing">Credentials</a>" section of your dashboard. Don't have an Algolia account yet? <a href="http://www.algolia.com/users/sign_up" target="_blank">Create one here</a>.</p>
                         <?php if ($algolia_registry->validCredential == false && ($algolia_registry->app_id || $algolia_registry->search_key || $algolia_registry->admin_key)) : ?>
                             <p class="warning">Your credentials are not valid</p>
                         <?php endif; ?>
@@ -68,40 +68,19 @@
 
                 <div style="clear: both;"></div>
 
-                <div style="float: left;">
-                    <div style="padding: 0px 10px;">
-                        <h3>Export configuration</h3>
-                        <div class="content-item">
-                            <div data-form="<?php echo site_url(); ?>/wp-admin/admin-post.php" data-value="export_config" name="submit" id="export" class="do-submit button button-danger">Export</div>
-                        </div>
+                <div style="padding: 0px 10px;">
+                    <h3>Administration</h3>
+                    <p class="help-block">Use this section to export, import or reset your configuration.</p>
+                    <div class="content-item" style="float: left; margin-right: 30px;">
+                        <div data-form="<?php echo site_url(); ?>/wp-admin/admin-post.php" data-value="export_config" name="submit" id="export" class="do-submit button button-primary">Export configuration</div>
                     </div>
-                </div>
-
-                <div style="clear: both;"></div>
-
-                <div style="float: left;">
-                    <div style="padding: 0px 10px;">
-                        <h3>Import configuration</h3>
-                        <div class="content-item">
-                            <input type="file" name="import">
-                        </div>
-                        <div class="content-item">
-                            <input type="submit" name="submit" id="submit" class="button button-primary" value="Import">
-                        </div>
+                    <h4 style="float: left; margin-right: 30px;">or</h4>
+                    <div class="content-item" style="float: left; margin-right: 30px;">
+                        <input type="submit" name="submit" id="submit" class="button button-primary" value="Import configuration" />
+                        <input type="file" name="import" />
                     </div>
-                </div>
-
-                <div style="clear: both;"></div>
-
-                <div style="float: left;">
-                    <div style="padding: 0px 10px;">
-                        <h3>Reset configuration to default</h3>
-                        <p class="help-block">
-                            This will set the config back to default except api keys
-                        </p>
-                        <div class="content-item">
-                            <div data-form="<?php echo site_url(); ?>/wp-admin/admin-post.php" data-value="reset_config_to_default" name="submit" id="reset-config" class="button button-danger">Reset</div>
-                        </div>
+                    <div class="content-item" style="float: right">
+                        <div data-form="<?php echo site_url(); ?>/wp-admin/admin-post.php" data-value="reset_config_to_default" name="submit" id="reset-config" class="button button-primary">Reset configuration</div>
                     </div>
                 </div>
 

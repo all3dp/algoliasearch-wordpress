@@ -5,7 +5,7 @@ class AlgoliaPlugin
     private $algolia_registry;
     private $algolia_helper;
     private $indexer;
-    private $theme_helper;
+    private $template_helper;
     private $query_replacer;
 
     public function __construct()
@@ -23,7 +23,7 @@ class AlgoliaPlugin
 
         $this->query_replacer = new \Algolia\Core\QueryReplacer();
 
-        $this->theme_helper = new \Algolia\Core\ThemeHelper();
+        $this->template_helper = new \Algolia\Core\TemplateHelper();
 
         $this->indexer = new \Algolia\Core\Indexer();
 
@@ -32,7 +32,7 @@ class AlgoliaPlugin
         add_action('admin_post_update_account_info',            array($this, 'admin_post_update_account_info'));
         add_action('admin_post_update_index_name',              array($this, 'admin_post_update_index_name'));
         add_action('admin_post_update_indexable_types',         array($this, 'admin_post_update_indexable_types'));
-        add_action('admin_post_update_type_of_search',          array($this, 'admin_post_update_type_of_search'));
+        add_action('admin_post_update_ui',                      array($this, 'admin_post_update_ui'));
         add_action('admin_post_update_extra_meta',              array($this, 'admin_post_update_extra_meta'));
         add_action('admin_post_custom_ranking',                 array($this, 'admin_post_custom_ranking'));
         add_action('admin_post_update_searchable_attributes',   array($this, 'admin_post_update_searchable_attributes'));
@@ -65,35 +65,18 @@ class AlgoliaPlugin
 
     public function wp_footer()
     {
-        include __DIR__ . '/themes/' . $this->algolia_registry->theme . '/templates.php';
+        include __DIR__ . '/templates/' . $this->algolia_registry->template . '/templates.php';
     }
 
-    public function scripts()
+    private function buildSettings()
     {
-        if (is_admin())
-            return;
-
-        wp_enqueue_style('jquery-ui', plugin_dir_url(__FILE__) . 'lib/jquery/jquery-ui.min.css');
-        wp_enqueue_style('algolia_styles', plugin_dir_url(__FILE__) . 'themes/' . $this->algolia_registry->theme . '/styles.css');
-
-        $scripts = array(
-            'lib/jquery/jquery-ui.js',
-            'lib/algolia/algoliasearch.min.js',
-            'lib/hogan/hogan.js',
-            'lib/typeahead/typeahead.js'
-        );
-
-        foreach ($scripts as $script) {
-            wp_register_script($script, plugin_dir_url(__FILE__) . $script, array());
-            wp_localize_script($script, 'settings', array());
-        }
-
         $indices = array();
         $facets = array();
 
         foreach ($this->algolia_registry->indexable_types as $type => $obj)
         {
-            $indices[] = array('index_name' => $this->algolia_registry->index_name . $type, 'name' => $obj['name'], 'order1' => 0, 'order2' => $obj['order']);
+            if ($obj['autocompletable'])
+                $indices[] = array('index_name' => $this->algolia_registry->index_name . $type, 'name' => $obj['name'], 'order1' => 0, 'order2' => $obj['order']);
 
             if (isset($this->algolia_registry->metas[$type]))
                 foreach ($this->algolia_registry->metas[$type] as $meta_key => $meta_value)
@@ -109,7 +92,7 @@ class AlgoliaPlugin
                     $indices[] = array('index_name' => $this->algolia_registry->index_name . $tax, 'name' => $obj['name'], 'order1' => 1, 'order2' => $obj['order']);
 
                 if ($obj['facetable'])
-                    $facets[] = array('tax' => $tax, 'name' => $obj['name'], 'order' => $obj['order'], 'type' => $obj['type']);
+                    $facets[] = array('tax' => $tax, 'name' => $obj['name'] ? $obj['name'] : $tax, 'order' => $obj['order'], 'type' => $obj['type']);
             }
         }
 
@@ -127,31 +110,44 @@ class AlgoliaPlugin
             'indices'                   => $indices,
             'sorting_indices'           => $sorting_indices,
             'index_name'                => $this->algolia_registry->index_name,
-            'type_of_search'            => $this->algolia_registry->type_of_search,
+            'autocomplete'              => $this->algolia_registry->autocomplete,
+            'instant'                   => $this->algolia_registry->instant,
             'instant_jquery_selector'   => str_replace("\\", "", $this->algolia_registry->instant_jquery_selector),
             'facets'                    => $facets,
             'number_by_type'            => $this->algolia_registry->number_by_type,
             'number_by_page'            => $this->algolia_registry->number_by_page,
             'search_input_selector'     => str_replace("\\", "", $this->algolia_registry->search_input_selector),
             'plugin_url'                => plugin_dir_url(__FILE__),
-            'theme'                     => $this->theme_helper->get_current_theme()
+            'template'                  => $this->template_helper->get_current_template(),
+            'is_search_page'            => isset($_GET['instant'])
         );
 
-        wp_register_script('algolia_main.js', plugin_dir_url(__FILE__) . 'front/main.js', array_merge(array('jquery'), $scripts));
-        wp_localize_script('algolia_main.js', 'algoliaSettings', $algoliaSettings);
+        return $algoliaSettings;
+    }
 
-        wp_enqueue_script('algolia_main.js');
+    public function scripts()
+    {
+        if (is_admin())
+            return;
 
-        wp_register_script('theme.js',  plugin_dir_url(__FILE__) . 'themes/' . $this->algolia_registry->theme . '/theme.js', array(), array());
-        wp_localize_script('theme.js', 'themesSettings', array());
+        wp_enqueue_style('algolia_bundle', plugin_dir_url(__FILE__) . 'templates/' . $this->algolia_registry->template . '/bundle.css');
+        wp_enqueue_style('algolia_styles', plugin_dir_url(__FILE__) . 'templates/' . $this->algolia_registry->template . '/styles.css');
 
-        wp_enqueue_script('theme.js');
+
+
+        wp_register_script('lib/bundle.min.js', plugin_dir_url(__FILE__) . 'lib/bundle.min.js', array());
+        wp_localize_script('lib/bundle.min.js', 'algoliaSettings', $this->buildSettings());
+
+        wp_register_script('template.js',  plugin_dir_url(__FILE__) . 'templates/' . $this->algolia_registry->template . '/template.js', array('lib/bundle.min.js'), array());
+
+        wp_enqueue_script('template.js');
 
     }
 
     public function admin_scripts($hook)
     {
         wp_enqueue_style('styles-admin', plugin_dir_url(__FILE__) . 'admin/styles/styles.css');
+        wp_enqueue_style('algolia_bundle', plugin_dir_url(__FILE__) . 'templates/' . $this->algolia_registry->template . '/bundle.css');
 
         // Only load these scripts on the Algolia admin page
         if ( 'toplevel_page_algolia-settings' != $hook ) {
@@ -161,24 +157,25 @@ class AlgoliaPlugin
         global $batch_count;
 
         $algoliaAdminSettings = array(
-            "types"         => array(),
-            "batch_count"   => $batch_count,
-            "site_url"      => site_url()
+            'taxonomies'    => array(),
+            'types'         => array(),
+            'batch_count'   => $batch_count,
+            'site_url'      => site_url()
         );
 
+        foreach (get_taxonomies() as $tax)
+            $algoliaAdminSettings['taxonomies'][$tax] = array('count' => wp_count_terms($tax, array('hide_empty' => false)));
 
         foreach ($this->algolia_registry->indexable_types as $type => $obj)
-            $algoliaAdminSettings["types"][] = array('type' => $type, 'name' => $obj['name'], 'count' => wp_count_posts($type)->publish);
+            $algoliaAdminSettings["types"][$type] = array('type' => $type, 'name' => $obj['name'], 'count' => wp_count_posts($type)->publish);
 
-        wp_register_script('jquery-ui', plugin_dir_url(__FILE__) . 'lib/jquery/jquery-ui.js', array_merge(array('jquery')));
-        wp_localize_script('jquery-ui', 'algoliaAdminSettings', $algoliaAdminSettings);
-        wp_enqueue_script('jquery-ui');
 
-        wp_register_script('admin.js', plugin_dir_url(__FILE__) . 'admin/scripts/admin.js', array_merge(array('jquery')));
+
+
+        wp_register_script('lib/bundle.min.js', plugin_dir_url(__FILE__) . 'lib/bundle.min.js', array());
+        wp_register_script('admin.js', plugin_dir_url(__FILE__) . 'admin/scripts/admin.js', array('lib/bundle.min.js'));
         wp_localize_script('admin.js', 'algoliaAdminSettings', $algoliaAdminSettings);
         wp_enqueue_script('admin.js');
-
-        wp_enqueue_style('jquery-ui', plugin_dir_url(__FILE__) . 'lib/jquery/jquery-ui.min.css');
     }
 
     public function pre_get_posts($query)
@@ -223,10 +220,12 @@ class AlgoliaPlugin
 
         $algolia_helper = new \Algolia\Core\AlgoliaHelper($app_id, $search_key, $admin_key);
 
-        $this->algolia_registry->app_id     = $app_id;
-        $this->algolia_registry->search_key = $search_key;
-        $this->algolia_registry->admin_key  = $admin_key;
-        $this->algolia_registry->index_name = $index_name;
+        $this->algolia_registry->app_id             = $app_id;
+        $this->algolia_registry->search_key         = $search_key;
+        $this->algolia_registry->admin_key          = $admin_key;
+        $this->algolia_registry->index_name         = $index_name;
+
+        $this->algolia_registry->need_to_reindex    = true;
 
         $algolia_helper->checkRights();
 
@@ -239,17 +238,36 @@ class AlgoliaPlugin
 
         $types = array();
 
+        $instant        = false;
+        $autocomplete   = false;
+
+        $metas = $this->algolia_registry->metas;
+
+        if (isset($metas['tax']) && is_array($metas['tax']))
+        {
+            foreach ($metas['tax'] as $tax)
+            {
+                $autocomplete = $autocomplete || $tax['autocompletable'];
+            }
+        }
+
         if (isset($_POST['TYPES']) && is_array($_POST['TYPES']))
         {
             $i = 0;
 
-            foreach ($_POST['TYPES'] as $type)
+            foreach ($_POST['TYPES'] as $slug => $type)
             {
-                if (in_array($type['SLUG'], $valid_types))
+                if (in_array($slug, $valid_types))
                 {
-                    $types[$type['SLUG']] = array(
-                        'name' => $type['NAME'] == '' ? $type['SLUG'] : $type['NAME'],
-                        'order' => $i
+                    $autocomplete   = $autocomplete || isset($type['AUTOCOMPLETABLE']);
+                    $instant        = $instant || isset($type['INSTANTABLE']);
+
+                    $types[$slug] = array(
+                        'autocompletable'       => isset($type['AUTOCOMPLETABLE']),
+                        'instantable'           => isset($type['INSTANTABLE']),
+                        'nb_results_by_section' => $type['NB_RESULTS_BY_SECTION'],
+                        'name'                  => $type['NAME'] == '' ? $type['SLUG'] : $type['NAME'],
+                        'order'                 => $i
                     );
 
                     $i++;
@@ -257,7 +275,12 @@ class AlgoliaPlugin
             }
         }
 
-        $this->algolia_registry->indexable_types = $types;
+        $this->algolia_registry->instant            = $instant;
+        $this->algolia_registry->autocomplete       = $autocomplete;
+
+        $this->algolia_registry->indexable_types    = $types;
+
+        $this->algolia_registry->need_to_reindex      = true;
 
         $this->algolia_helper->handleIndexCreation();
 
@@ -320,6 +343,8 @@ class AlgoliaPlugin
             $this->algolia_helper->handleIndexCreation();
         }
 
+        $this->algolia_registry->need_to_reindex  = true;
+
         wp_redirect('admin.php?page=algolia-settings#sortable_attributes');
     }
 
@@ -330,35 +355,31 @@ class AlgoliaPlugin
         if (isset($_POST['TRUNCATE_SIZE']) && is_numeric($_POST['TRUNCATE_SIZE']))
             $this->algolia_registry->truncate_size = $_POST['TRUNCATE_SIZE'];
 
+        $this->algolia_registry->need_to_reindex  = true;
+
         wp_redirect('admin.php?page=algolia-settings#advanced');
     }
 
 
-    public function admin_post_update_type_of_search()
+    public function admin_post_update_ui()
     {
-        if (isset($_POST['TYPE_OF_SEARCH']) && is_array($_POST['TYPE_OF_SEARCH']))
-            $this->algolia_registry->type_of_search = $_POST['TYPE_OF_SEARCH'];
-
         if (isset($_POST['JQUERY_SELECTOR']))
             $this->algolia_registry->instant_jquery_selector = str_replace('"', '\'', $_POST['JQUERY_SELECTOR']);
 
         if (isset($_POST['NUMBER_BY_PAGE']) && is_numeric($_POST['NUMBER_BY_PAGE']))
             $this->algolia_registry->number_by_page = $_POST['NUMBER_BY_PAGE'];
 
-        if (isset($_POST['NUMBER_BY_TYPE']) && is_numeric($_POST['NUMBER_BY_TYPE']))
-            $this->algolia_registry->number_by_type = $_POST['NUMBER_BY_TYPE'];
-
         $search_input_selector  = !empty($_POST['SEARCH_INPUT_SELECTOR']) ? $_POST['SEARCH_INPUT_SELECTOR'] : '';
-        $theme                  = !empty($_POST['THEME']) ? $_POST['THEME'] : 'default';
+        $template                  = !empty($_POST['template']) ? $_POST['template'] : 'default';
 
         $this->algolia_registry->search_input_selector  = str_replace('"', '\'', $search_input_selector);
-        $this->algolia_registry->theme                  = $theme;
+        $this->algolia_registry->template                  = $template;
 
 
         /**
-         * Handle Facet types that do not exist anymore because of theme changing
+         * Handle Facet types that do not exist anymore because of template changing
          */
-        $new_facet_types = array_merge(array('conjunctive' => 'Conjunctive', 'disjunctive' => 'Disjunctive'), $this->theme_helper->get_current_theme()->facet_types);
+        $new_facet_types = array_merge(array('conjunctive' => 'Conjunctive', 'disjunctive' => 'Disjunctive'), $this->template_helper->get_current_template()->facet_types);
 
         $metas = $this->algolia_registry->metas;
 
@@ -416,6 +437,8 @@ class AlgoliaPlugin
     public function admin_post_reset_config_to_default()
     {
         $this->algolia_registry->reset_config_to_default();
+
+        $this->algolia_registry->need_to_reindex  = true;
     }
 
     public function admin_post_export_config()
@@ -469,6 +492,13 @@ class AlgoliaPlugin
 
         $valid_tax = get_taxonomies();
 
+        $autocomplete = false;
+
+        foreach ($indexable_types as $type)
+        {
+            $autocomplete = $autocomplete || $type['autocompletable'];
+        }
+
         if (isset($_POST['TAX']) && is_array($_POST['TAX']))
         {
             foreach ($_POST['TAX'] as $tax)
@@ -481,8 +511,10 @@ class AlgoliaPlugin
                     $metas['tax'][$tax['SLUG']]['name']                 = isset($tax['NAME']) ? $tax['NAME'] : '';
                     $metas['tax'][$tax['SLUG']]['indexable']            = 1;
 
-                    $metas['tax'][$tax['SLUG']]['facetable']            = in_array('instant', $this->algolia_registry->type_of_search)
+                    $metas['tax'][$tax['SLUG']]['facetable']            = $this->algolia_registry->instant
                                                                             && $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['FACETABLE']) ? 1 : 0;
+
+                    $autocomplete = $autocomplete || $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['AUTOCOMPLETABLE']);
 
                     $metas['tax'][$tax['SLUG']]['autocompletable']      = $metas['tax'][$tax['SLUG']]['indexable'] && isset($tax['AUTOCOMPLETABLE']) ? 1 : 0;
                     $metas['tax'][$tax['SLUG']]['type']                 = $tax['FACET_TYPE'];
@@ -494,11 +526,16 @@ class AlgoliaPlugin
             }
         }
 
-        $this->algolia_registry->metas = $metas;
+        $this->algolia_registry->autocomplete   = $autocomplete;
+
+        $this->algolia_registry->metas          = $metas;
+
+        $this->algolia_registry->need_to_reindex  = true;
 
         $this->algolia_helper->handleIndexCreation();
 
         $this->indexer->indexTaxonomies();
+
 
         wp_redirect('admin.php?page=algolia-settings#extra-metas');
     }
@@ -518,7 +555,11 @@ class AlgoliaPlugin
                 if ($subaction[0] == 'index_taxonomies')
                     $this->indexer->indexTaxonomies();
                 if ($subaction[0] == 'move_indexes')
+                {
                     $this->indexer->moveTempIndexes();
+
+                    $this->algolia_registry->need_to_reindex  = false;
+                }
             }
 
             if (count($subaction) == 3)

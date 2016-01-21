@@ -1,4 +1,6 @@
 <?php
+    global $batch_count;
+
     $sortable = array();
 
     $i = 0;
@@ -28,11 +30,12 @@
 
     foreach (get_post_types() as $type)
     {
-        $metas = get_meta_key_list($type);
+        $type_count = floor(get_meta_key_list_count($type) / $batch_count);
 
-        if (isset($external_attrs[$type.'_attrs']))
-            $metas = array_merge($metas, $external_attrs[$type.'_attrs']);
+        $metas = array();
 
+        for ($offset = 0; $offset <= $type_count; $offset++)
+            $metas = array_merge($metas, get_meta_key_list($type, $offset * $batch_count, $batch_count));
 
         foreach ($metas as $meta_key)
         {
@@ -63,7 +66,8 @@
         <input type="hidden" name="action" value="update_sortable_attributes">
         <div class="content-wrapper" id="customization">
             <div class="content">
-                <p class="help-block">By default results are sorted by text relevance &amp; your ranking criteria. Configure here the attributes you want to use for the additional sorts (by price, by date, etc...).</p>
+                <h3>Sorting Configuration</h3>
+                <p class="help-block">By default results are sorted by text relevance &amp; by the ranking criteria. Configure here the attributes you want to use for the additional sorts (by price, by date, etc...).</p>
                 <table>
                     <tr data-order="-1">
                         <th class="table-col-enabled">Enabled</th>
@@ -87,7 +91,7 @@
                             <td>
                                 <input type="text"
                                        value="<?php echo $sortItem->label ?>" name="ATTRIBUTES[<?php echo $sortItem->name; ?>][LABEL_<?php echo $sortItem->sort; ?>]">
-                                <img width="10" src="<?php echo $move_icon_url; ?>">
+                                <img width="10" src="<?php echo $move_icon_url; ?>" style="float: right; margin-top: 10px" />
                             </td>
                             <input type="hidden" name="ATTRIBUTES[<?php echo $sortItem->name; ?>][ORDER_<?php echo $sortItem->sort ?>]" class="order" />
                         </tr>

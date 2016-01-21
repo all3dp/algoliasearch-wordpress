@@ -13,8 +13,8 @@ class Registry
         'admin_key'                     => '',
         'index_name'                    => '',
         'indexable_types'               => array(
-                                                'post' => array('name' => 'Articles', 'order' => 0),
-                                                'page' => array('name' => 'Pages', 'order' => 1)
+                                                'post' => array('name' => 'Articles', 'order' => 0, 'instantable' => true, 'autocompletable' => true),
+                                                'page' => array('name' => 'Pages', 'order' => 1, 'instantable' => true, 'autocompletable' => false)
                                             ),
         'searchable'                    => array(
                                                 'title'     => array('ordered' => 'ordered', 'order' => 0),
@@ -28,17 +28,20 @@ class Registry
                                                 'content'   => array('ordered' => 'unordered', 'order' => 8)
                                             ),
         'sortable'                      => array(),
-        'type_of_search'                => array('autocomplete', 'instant'),
+        'instant'                       => true,
+        'autocomplete'                  => true,
         'instant_jquery_selector'       => '#content',
         'extras'                        => array('author' => 'author', 'author_login' => 'author_login', 'permalink' => 'permalink', 'date' => 'date', 'content' => 'content', 'h1' => 'h1', 'h2' => 'h2', 'h3' => 'h3', 'h4' => 'h4', 'h5' => 'h5', 'h6' => 'h6', 'text' => 'text', 'title' => 'title', 'slug' => 'slug', 'modified' => 'modified', 'parent' => 'parent', 'menu_order' => 'menu_order', 'type' => 'type'),
         'metas'                         => array(),
         'number_by_page'                => 10,
         'number_by_type'                => 3,
         'search_input_selector'         => "[name='s']",
-        'theme'                         => 'default',
+        'template'                      => 'default',
         'last_update'                   => '',
         'enable_truncating'             => true,
-        'truncate_size'                 => 9000
+        'truncate_size'                 => 9000,
+        'need_to_reindex'               => true,
+        'excluded_types'                => array('revision', 'nav_menu_item', 'acf', 'product_variation', 'shop_order', 'shop_order_refund', 'shop_coupon', 'shop_webhook', 'wooframework')
     );
 
     public static function getInstance()

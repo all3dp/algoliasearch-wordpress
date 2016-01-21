@@ -1,6 +1,8 @@
 <?php
     $i = 0;
 
+    global $batch_count;
+
     $custom_rankings = array();
 
     if (isset($algolia_registry->metas['tax']))
@@ -40,10 +42,12 @@
 
     foreach (get_post_types() as $type)
     {
-        $metas = get_meta_key_list($type);
+        $type_count = floor(get_meta_key_list_count($type) / $batch_count);
 
-        if (isset($external_attrs[$type.'_attrs']))
-            $metas = array_merge($metas, $external_attrs[$type.'_attrs']);
+        $metas = array();
+
+        for ($offset = 0; $offset <= $type_count; $offset++)
+            $metas = array_merge($metas, get_meta_key_list($type, $offset * $batch_count, $batch_count));
 
         foreach ($metas as $meta_key)
         {
@@ -87,6 +91,7 @@
         <input type="hidden" name="action" value="custom_ranking">
         <div class="content-wrapper" id="customization">
             <div class="content">
+                <h3>Ranking Configuration</h3>
                 <p class="help-block">Configure here the attributes used to reflect the popularity of your records (number of likes, number of views, number of sales...).</p>
                 <table>
                     <tr data-order="-1">
@@ -110,7 +115,7 @@
                                             <option <?php echo ($rankable->sort == $key ? 'selected' : ''); ?> value="<?php echo $key; ?>"><?php echo $value; ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <img width="10" src="<?php echo $move_icon_url; ?>">
+                                <img width="10" src="<?php echo $move_icon_url; ?>" style="float: right; margin-top: 10px" />
                             </td>
                         </tr>
                     <?php endforeach; ?>

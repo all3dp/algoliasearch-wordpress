@@ -1,13 +1,32 @@
 <?php
     $langDomain         = "algolia";
     $algolia_registry   = \Algolia\Core\Registry::getInstance();
-    $theme_helper       = new Algolia\Core\ThemeHelper();
-    $current_theme      = $theme_helper->get_current_theme();
+    $template_helper    = new Algolia\Core\TemplateHelper();
+    $current_template   = $template_helper->get_current_template();
 
     $move_icon_url      = plugin_dir_url(__FILE__) . '../imgs/move.png';
 
-    global $external_attrs;
+    $need_to_reindex    = $algolia_registry->need_to_reindex;
+
     global $attributesToIndex;
+
+?>
+
+<?php
+
+if (function_exists('curl_version') == false)
+{
+?>
+    <div>
+        <h1>Algolia Search : Errors</h1>
+        <ul>
+            <li>You need to have <b>curl</b> and <b>php5-curl</b> installed</li>
+        </ul>
+    </div>
+<?php
+    return;
+}
+
 ?>
 
 <div id="algolia-settings" class="wrap">
@@ -16,17 +35,18 @@
 
     <?php if ($algolia_registry->validCredential) : ?>
     <h2>
-        Algolia Realtime Search
-        <button type="button" class="button button-primary " id="algolia_reindex" name="algolia_reindex">
+        Algolia Search
+        <button type="button" class="button <?php echo (! $need_to_reindex ? "button-secondary" : "button-primary"); ?> " id="algolia_reindex" name="algolia_reindex">
             <i class="dashicons dashicons-upload"></i>
-            Reindex data
+            <?php echo (! $need_to_reindex ? "Reindex data" : "Reindexing Needed"); ?>
+            <span class="record-count"></span>
         </button>
         <em id='last-update' style="color: #444;font-family: 'Open Sans',sans-serif;font-size: 13px;line-height: 1.4em;">
             Last update:
             <?php if ($algolia_registry->last_update): ?>
                 <?php echo date('Y-m-d H:i:s', $algolia_registry->last_update); ?>
             <?php else: ?>
-                N/A
+                <span style="color: red">Never: please re-index your data.</span>
             <?php endif; ?>
         </em>
     </h2>
@@ -82,12 +102,12 @@
 
             <?php if ($algolia_registry->validCredential) : ?>
 
-            <div data-tab="#configuration"          class="title selected">UI Configuration</div>
+            <div data-tab="#configuration"          class="title selected">UI</div>
             <div data-tab="#indexable-types"        class="title">Types</div>
             <div data-tab="#extra-metas"            class="title">Attributes</div>
-            <div data-tab="#searchable_attributes"  class="title">Search Configuration</div>
-            <div data-tab="#custom-ranking"         class="title">Ranking Configuration</div>
-            <div data-tab="#sortable_attributes"    class="title">Sorting Configuration</div>
+            <div data-tab="#searchable_attributes"  class="title">Search</div>
+            <div data-tab="#custom-ranking"         class="title">Ranking</div>
+            <div data-tab="#sortable_attributes"    class="title">Sorting</div>
             <div data-tab="#advanced"               class="title">Advanced</div>
 
             <?php endif; ?>

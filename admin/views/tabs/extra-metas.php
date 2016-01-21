@@ -1,16 +1,21 @@
 <?php
     $extra_metas = array();
-    $facet_types = array_merge(array("conjunctive" => "Conjunctive", "disjunctive" => "Disjunctive"), $current_theme->facet_types);
+    $facet_types = array_merge(array("conjunctive" => "Conjunctive", "disjunctive" => "Disjunctive"), $current_template->facet_types);
     $i = 0;
+
+    global $batch_count;
+
 
     foreach (get_post_types() as $type)
     {
         if (is_array($algolia_registry->indexable_types) && in_array($type, array_keys($algolia_registry->indexable_types)))
         {
-            $metas = get_meta_key_list($type);
+            $type_count = floor(get_meta_key_list_count($type) / $batch_count);
 
-            if (isset($external_attrs[$type.'_attrs']))
-                $metas = array_merge(get_meta_key_list($type), $external_attrs[$type.'_attrs']);
+            $metas = array();
+
+            for ($offset = 0; $offset <= $type_count; $offset++)
+                $metas = array_merge($metas, get_meta_key_list($type, $offset * $batch_count, $batch_count));
 
             foreach ($metas as $meta)
             {
@@ -70,6 +75,8 @@
 
         $taxItem                    = new stdClass();
 
+        $taxItem->count             = in_array($tax, $algolia_registry->extras) ? "" : $count;
+
         $taxItem->name              = $tax;
         $taxItem->order             = isset($algolia_registry->metas['tax']) && isset($algolia_registry->metas['tax'][$tax])
                                         && $algolia_registry->metas['tax'][$tax]['order']
@@ -106,9 +113,8 @@
         <input type="hidden" name="action" value="update_extra_meta">
         <div class="content-wrapper" id="customization">
             <div class="content">
-                <p class="help-block">
-                    Configure here the attributes you want to include in your Algolia records.
-                </p>
+                <h3>Attributes Configuration</h3>
+                <p class="help-block">Configure here the attributes of your Algolia records.</p>
 
                 <table id="extra-meta-and-taxonomies">
                     <tr data-order="-1">
@@ -116,25 +122,23 @@
                         <th>Type</th>
                         <th>Name</th>
                         <th>
-                            <?php if (in_array('autocomplete', $algolia_registry->type_of_search)): ?>
+                            <?php if ($algolia_registry->autocomplete): ?>
                                 Autocomplete section
                             <?php endif; ?>
                         </th>
                         <th>
-                            <?php if (in_array('instant', $algolia_registry->type_of_search)): ?>
+                            <?php if ($algolia_registry->instant): ?>
                                 Facetable
                             <?php endif; ?>
                         </th>
                         <th>Facet type</th>
                         <th>
-                            Label &amp; ordering
+                            Label
                         </th>
                     </tr>
                 </table>
 
-                <p class="help-block">
-                    Configure here the attributes you want to include in your Algolia records.
-                </p>
+                <p class="help-block">Configure here the additional attributes you want to include in your Algolia records.</p>
 
                 <div>
                     <div data-tab="#extra-metas-attributes" class="title selected">Additional Attributes</div>
@@ -149,12 +153,12 @@
                             <th>Type</th>
                             <th>Meta key</th>
                             <th>
-                                <?php if (in_array('autocomplete', $algolia_registry->type_of_search)): ?>
+                                <?php if ($algolia_registry->autocomplete): ?>
                                     Autocomplete section
                                 <?php endif; ?>
                             </th>
                             <th>
-                                <?php if (in_array('instant', $algolia_registry->type_of_search)): ?>
+                                <?php if ($algolia_registry->instant): ?>
                                     Facetable
                                 <?php endif; ?>
                             </th>
@@ -174,7 +178,7 @@
                                 <td><?php echo $metaItem->name; ?></td>
                                 <td></td>
                                 <td>
-                                    <?php if (in_array('instant', $algolia_registry->type_of_search)): ?>
+                                    <?php if ($algolia_registry->instant): ?>
                                         <input type="checkbox"
                                                name="TYPES[<?php echo $metaItem->type; ?>][METAS][<?php echo $metaItem->name; ?>][FACETABLE]"
                                                value="1"
@@ -195,7 +199,7 @@
                                 <td style="white-space: nowrap;">
                                     <input type="text"
                                            value="<?php echo $metaItem->label ?>" name="TYPES[<?php echo $metaItem->type; ?>][METAS][<?php echo $metaItem->name; ?>][NAME]">
-                                    <img width="10" src="<?php echo $move_icon_url; ?>">
+                                    <img width="10" src="<?php echo $move_icon_url; ?>" style="float: right; margin-top: 10px" />
                                 </td>
 
                                 <!-- PREVENT FROM ERASING CUSTOM RANKING -->
@@ -221,10 +225,10 @@
                             <th class="table-col-enabled">Enabled</th>
                             <th></th>
                             <th>Name</th>
-                            <?php if (in_array('autocomplete', $algolia_registry->type_of_search)): ?>
+                            <?php if ($algolia_registry->autocomplete): ?>
                                 <th>Autocomplete section</th>
                             <?php endif; ?>
-                            <?php if (in_array('instant', $algolia_registry->type_of_search)): ?>
+                            <?php if ($algolia_registry->instant): ?>
                                 <th>Facetable</th>
                             <?php endif; ?>
                             <th>Facet type</th>
@@ -248,9 +252,10 @@
                                 <td>*</td>
                                 <td>
                                     <?php echo $taxItem->name; ?>
+                                    <?php echo ($taxItem->count != '' ? '('.$taxItem->count.')' : ''); ?>
                                 </td>
                                 <td>
-                                    <?php if (in_array('autocomplete', $algolia_registry->type_of_search)): ?>
+                                    <?php if ($algolia_registry->autocomplete): ?>
                                         <?php if ($taxItem->default_attribute == false): ?>
                                             <input type="checkbox"
                                                    value="facetable"
@@ -261,7 +266,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if (in_array('instant', $algolia_registry->type_of_search)): ?>
+                                    <?php if ($algolia_registry->instant): ?>
                                         <input type="checkbox"
                                                value="facetable"
                                                name="TAX[<?php echo $taxItem->name; ?>][FACETABLE]"
@@ -281,7 +286,7 @@
                                 </td>
                                 <td style="white-space: nowrap;">
                                     <input type="text" value="<?php echo $taxItem->label ?>" name="TAX[<?php echo $taxItem->name; ?>][NAME]">
-                                    <img width="10" src="<?php echo $move_icon_url; ?>">
+                                    <img width="10" src="<?php echo $move_icon_url; ?>"  style="float: right; margin-top: 10px" />
                                 </td>
                                 <input type="hidden" name="TAX[<?php echo $taxItem->name; ?>][ORDER]" class="order" />
                                 </tr>

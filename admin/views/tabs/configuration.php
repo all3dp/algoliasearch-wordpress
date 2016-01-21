@@ -1,7 +1,7 @@
 <div class="tab-content" id="_configuration">
     <form action="<?php echo site_url(); ?>/wp-admin/admin-post.php" method="post">
-        <input type="hidden" name="action" value="update_type_of_search" />
-        <div class="content-wrapper" id="type_of_search">
+        <input type="hidden" name="action" value="update_ui" />
+        <div class="content-wrapper" id="ui">
             <div class="content">
                 <div class="content-item">
                     <h3>Search Bar</h3>
@@ -12,89 +12,55 @@
                         <p class="description">The jQuery selector used to select your search bar.</p>
                     </div>
                 </div>
-                <div class="has-extra-content content-item">
-                    <h3>Search Experience</h3>
-                    <p class="help-block">Configure here whether you want an autocomplete menu or a instant search results page.</p>
+                <div class="content-item">
+                    <h3>Search Results Page</h3>
+                    <p class="help-block">Configure here your instant search results page.</p>
+                </div>
+                <div class="content-item">
                     <div>
-                        <input type="checkbox"
-                            <?php checked(in_array('autocomplete', $algolia_registry->type_of_search)); ?>
-                               class="instant_radio"
-                               name="TYPE_OF_SEARCH[]"
-                               value="autocomplete"
-                               id="instant_radio_autocomplete" />
-                        <label for="instant_radio_autocomplete">Autocompletion menu</label>
-                        <p class="description">Add an auto-completion menu to your search bar.</p>
+                        <label for="instant_radio_instant_jquery_selector">DOM selector</label>
+                        <input type="text"
+                               id="instant_radio_instant_jquery_selector"
+                               value="<?php echo str_replace("\\", "", $algolia_registry->instant_jquery_selector); ?>"
+                               placeholder="#content"
+                               name="JQUERY_SELECTOR"
+                               value="" />
+                        <p class="description">The jQuery selector used to inject the search results.</p>
                     </div>
-                    <div class="show-hide" style="display: none;">
-                        <div>
-                            <label for="instant_radio_autocomplete_nb_results">Results by section</label>
-                            <input type="number" min="0" value="<?php echo $algolia_registry->number_by_type; ?>" name="NUMBER_BY_TYPE" id="instant_radio_autocomplete_nb_results">
-                            <p class="description">The number of results per section in the dropdown menu.</p>
-                        </div>
+                    <div>
+                        <label for="instant_radio_instant_nb_results">Number of results by page</label>
+                        <input type="number" min="0" value="<?php echo $algolia_registry->number_by_page; ?>" name="NUMBER_BY_PAGE" id="instant_radio_instant_nb_results">
+                        <p class="description">The number of results to display on a results page.</p>
                     </div>
                 </div>
-                <div class="has-extra-content content-item">
-                    <div>
-                        <input type="checkbox"
-                            <?php checked(in_array('instant', $algolia_registry->type_of_search)); ?>
-                               class="instant_radio"
-                               name="TYPE_OF_SEARCH[]"
-                               value="instant"
-                               id="instant_radio_instant" />
-                        <label for="instant_radio_instant">Instant-search results page</label>
-                        <p class="description">Refresh the whole results page as you type.</p>
-                    </div>
-                    <div class="show-hide" style="display: none;">
-                        <div>
-                            <label for="instant_radio_instant_jquery_selector">DOM selector</label>
-                            <input type="text"
-                                   id="instant_radio_instant_jquery_selector"
-                                   value="<?php echo str_replace("\\", "", $algolia_registry->instant_jquery_selector); ?>"
-                                   placeholder="#content"
-                                   name="JQUERY_SELECTOR"
-                                   value="" />
-                            <p class="description">The jQuery selector used to inject the search results.</p>
-                        </div>
-                        <div>
-                            <label for="instant_radio_instant_nb_results">Number of results by page</label>
-                            <input type="number" min="0" value="<?php echo $algolia_registry->number_by_page; ?>" name="NUMBER_BY_PAGE" id="instant_radio_instant_nb_results">
-                            <p class="description">The number of results to display on a results page.</p>
-                        </div>
-                    </div>
-                </div>
-                <h3>Theme</h3>
-                <p class="help-block">Select the theme you want to use to display the search results. You can either use one of the 2 sample themes or build your own.</p>
+                <h3>Results template <span class="h3-info">(includes html, js and css needed to display the results for both the auto-completion menu and the instant search results page)</span></h3>
+                <p class="help-block">Select the template you want to use to display the search results. You can either use one of the 2 sample templates or build your own.</p>
                 <div class="content-item">
                     <div class="theme-browser">
                         <div class="themes">
-                            <?php foreach ($theme_helper->available_themes() as $theme): ?>
-                            <?php if ($theme->dir == $algolia_registry->theme): ?>
+                            <?php foreach ($template_helper->available_templates() as $template): ?>
+                            <?php if ($template->dir == $algolia_registry->template): ?>
                             <div class="theme active">
                                 <?php else: ?>
                                 <div class="theme">
                                     <?php endif; ?>
-                                    <label for="<?php echo $theme->dir; ?>">
+                                    <label for="<?php echo $template->dir; ?>">
                                         <div class="theme-screenshot">
-                                            <?php if ($theme->screenshot): ?>
-                                                <img class="screenshot instant" src="<?php echo $theme->screenshot; ?>">
+                                            <?php if ($template->screenshot): ?>
+                                                <img class="screenshot instant" src="<?php echo $template->screenshot; ?>">
                                             <?php else: ?>
                                                 <div class="no-screenshot screenshot instant">No screenshot</div>
                                             <?php endif; ?>
-                                            <?php if ($theme->screenshot_autocomplete): ?>
-                                                <img class="screenshot autocomplete" src="<?php echo $theme->screenshot_autocomplete; ?>">
-                                            <?php else: ?>
-                                                <div class="no-screenshot autocomplete instant">No screenshot</div>
-                                            <?php endif; ?>
                                         </div>
                                         <div class="theme-name">
-                                            <?php echo $theme->name; ?>
+                                            <?php echo $template->name; ?>
                                             <input type="radio"
-                                                   id="<?php echo $theme->dir; ?>"
-                                                <?php checked($theme->dir == $algolia_registry->theme); ?>
-                                                   name='THEME'
-                                                   value="<?php echo $theme->dir; ?>"/>
+                                                   id="<?php echo $template->dir; ?>"
+                                                <?php checked($template->dir == $algolia_registry->template); ?>
+                                                   name='template'
+                                                   value="<?php echo $template->dir; ?>"/>
                                         </div>
-                                        <div><?php echo $theme->description; ?></div>
+                                        <div><?php echo $template->description; ?></div>
                                     </label>
                                 </div>
                                 <?php endforeach; ?>

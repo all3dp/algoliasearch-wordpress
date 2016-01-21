@@ -3,6 +3,8 @@
 
     $searchable = array();
 
+    global $batch_count;
+
     if (isset($algolia_registry->metas['tax']))
     {
         foreach (array_keys($algolia_registry->metas['tax']) as $tax)
@@ -27,11 +29,12 @@
 
     foreach (get_post_types() as $type)
     {
-        $metas = get_meta_key_list($type);
+        $type_count = floor(get_meta_key_list_count($type) / $batch_count);
 
-        if (isset($external_attrs[$type.'_attrs']))
-            $metas = array_merge($metas, $external_attrs[$type.'_attrs']);
+        $metas = array();
 
+        for ($offset = 0; $offset <= $type_count; $offset++)
+            $metas = array_merge($metas, get_meta_key_list($type, $offset * $batch_count, $batch_count));
 
         foreach ($metas as $meta_key)
         {
@@ -63,12 +66,13 @@
         <input type="hidden" name="action" value="update_searchable_attributes">
         <div class="content-wrapper" id="customization">
             <div class="content">
+                <h3>Search Configuration</h3>
                 <p class="help-block">Configure here the attributes you want to be able to search in. The order of this setting matters as those at the top of the list are considered more important.</p>
                 <table>
                     <tr data-order="-1">
                         <th class="table-col-enabled">Enabled</th>
                         <th>Name</th>
-                        <th>Attribute ordering</th>
+                        <th>Options</th>
                     </tr>
                     <?php
 
@@ -89,7 +93,7 @@
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 </select>
-                                <img width="10" src="<?php echo $move_icon_url; ?>">
+                                <img width="10" src="<?php echo $move_icon_url; ?>" style="float: right; margin-top: 10px">
                             </td>
                         </tr>
                     <?php endforeach; ?>
