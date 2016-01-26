@@ -246,3 +246,11 @@ add_filter('prepare_algolia_record', function ($data) {
 
     return $data;
 });
+
+add_action('popuplar_index_run_finished', function(){
+    $algolia_registry = \Algolia\Core\Registry::getInstance();
+    $indexer = new \Algolia\Core\Indexer();
+    $indexer->indexAllPosts();
+    $indexer->indexTaxonomies();
+    $indexer->moveTempIndexes();
+});
