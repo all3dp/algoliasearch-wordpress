@@ -36,7 +36,7 @@ new AlgoliaPluginAuto();
  * Variables Definition
  */
 
-$batch_count = 100;
+$batch_count = 10000;
 
 $attributesToSnippet    = array("content");
 
@@ -195,3 +195,21 @@ function truncate($text, $length)
 
     return apply_filters('wp_trim_excerpt', $text);
 }
+
+add_filter('prepare_algolia_set_settings', function ($index_name, $settings)
+{
+    $settings['attributesToIndex'] = array(
+        'unordered(title,slug)',
+        'unordered(title,slug,h1.value)',
+        'unordered(h2.value,h3.value)',
+        'unordered(excerpt,text.value,h4.value,h5.value,h6.value)',
+        'unordered(post_tag, author, category)'
+    );
+
+    $settings['customRanking'] = array(
+        'desc(popular_post)',
+        'desc(date)'
+    );
+
+    return $settings;
+}, 10, 3);
