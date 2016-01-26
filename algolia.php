@@ -213,3 +213,36 @@ add_filter('prepare_algolia_set_settings', function ($index_name, $settings)
 
     return $settings;
 }, 10, 3);
+
+
+add_filter('prepare_algolia_record', function ($data) {
+
+    // Create a excerpt entry
+    if($data->objectID) {
+        $id = $data->objectID;//This is page id or post id
+        $content_post = get_post($id);
+        $content = $content_post->post_content;
+
+        $text = strip_shortcodes($content);
+        $text = apply_filters('the_content', $text);
+        $text = str_replace(']]>', ']]&gt;', $text);
+        $text = strip_tags($text);
+        $excerpt_length = apply_filters('excerpt_length', 30);
+        $excerpt_more = apply_filters('excerpt_more', ' ' . '[...]');
+        $words = preg_split("/[\n\r\t ]+/", $text, $excerpt_length + 1, PREG_SPLIT_NO_EMPTY);
+        if (count($words) > $excerpt_length) {
+            array_pop($words);
+            $text = implode(' ', $words);
+            $text = $text . $excerpt_more;
+        } else {
+            $text = implode(' ', $words);
+        }
+
+        $data->excerpt = $text;
+
+    } else {
+        $data->excerpt = '';
+    }
+
+    return $data;
+});
