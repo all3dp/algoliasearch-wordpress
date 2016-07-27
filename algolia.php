@@ -207,7 +207,7 @@ add_filter('prepare_algolia_set_settings', function ($index_name, $settings)
     );
 
     $settings['customRanking'] = array(
-        'desc(popular_post)',
+        'desc(popular_views)',
         'desc(date)'
     );
 
