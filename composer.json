@@ -1,0 +1,8 @@
+{
+    "name": "wordpress-plugins/algoliasearch-wordpress",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=5.5",
+        "composer/installers": "*"
+    }
+}
