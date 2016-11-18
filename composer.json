@@ -1,5 +1,5 @@
 {
-    "name": "wordpress-plugins/algoliasearch-wordpress",
+    "name": "all3dp/algoliasearch-wordpress",
     "type": "wordpress-plugin",
     "require": {
         "php": ">=5.5",
