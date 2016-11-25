@@ -1206,11 +1206,13 @@ class Index {
     private function buildBatch($action, $objects, $withObjectID, $objectIDKey = "objectID") {
         $requests = array();
         foreach ($objects as $obj) {
-            $req = array("action" => $action, "body" => $obj);
-            if ($withObjectID && array_key_exists($objectIDKey, $obj)) {
-                $req["objectID"] = (string) $obj[$objectIDKey];
+            if($obj) {
+              $req = array("action" => $action, "body" => $obj);
+              if ($withObjectID && array_key_exists($objectIDKey, $obj)) {
+                  $req["objectID"] = (string) $obj[$objectIDKey];
+              }
+              array_push($requests, $req);
             }
-            array_push($requests, $req);
         }
         return array("requests" => $requests);
     }

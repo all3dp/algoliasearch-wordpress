@@ -30,7 +30,8 @@ require_once(plugin_dir_path(__FILE__).'/AlgoliaPluginAuto.php');
 
 
 new AlgoliaPlugin();
-new AlgoliaPluginAuto();
+global $algoliaPluginAuto;
+$algoliaPluginAuto = new AlgoliaPluginAuto();
 
 /**
  * Variables Definition
@@ -246,6 +247,51 @@ add_filter('prepare_algolia_record', function ($data) {
 
     return $data;
 });
+
+/**
+ * Removes promotional posts from algolia search index
+ *
+ * @param $data
+ */
+/*
+function action_algolia_promo_posts($post_ID, $post_after, $post_before) {
+
+  if($post_ID) {
+
+    if($post_after && function_exists('get_field')) {
+
+      $val = get_field('post_is_promotion', $post_after->ID);
+
+      if($val === 'yes') {
+        $GLOBALS['algoliaPluginAuto']->postDeleted((int)$post_after->ID);
+      }
+    }
+  }
+}
+
+add_action( 'post_updated', 'action_algolia_promo_posts', 10, 3 );
+*/
+
+function filter_algolia_promo_posts($data) {
+
+  if($data->objectID) {
+
+    $post = get_post((int)$data->objectID);
+
+    if($post) {
+
+      $val = get_field('post_is_promotion', $post->ID);
+
+      if($val === 'yes') {
+        $GLOBALS['algoliaPluginAuto']->postDeleted((int)$post->ID);
+        return;
+      }
+    }
+  }
+  return $data;
+}
+
+add_filter('prepare_algolia_record', 'filter_algolia_promo_posts', 9999, 1);
 
 add_action('popuplar_index_run_finished', function(){
     $algolia_registry = \Algolia\Core\Registry::getInstance();
